@@ -40,7 +40,7 @@ Push local changes to the accelerator to the image repository
 example: 
     tanzu accelerator push --local-path . --source-image $IMAGE_REGISTRY_SERVER/test-accelerator
 ```
-## deployment the accelerator to github when finished editing
+## deploying the accelerator to github when finished editing
 to deploy this accelerator via github repository, commit the local-path to github and ensure the sample-accelerator-deployment.yaml refers to that directory
 
 `kubectl delete acc test-accelerator -n accelerator-system`
