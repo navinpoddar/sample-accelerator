@@ -80,15 +80,6 @@ engine:
     - include: ["**/*"]
       exclude: ["README.md","sample-accelerator-deployment.yaml",".git",".gradle",".idea",]
 
-#rename src project package name
-    - include: ["**/*.java"]
-      chain:
-        - type: OpenRewriteRecipe
-          recipe: org.openrewrite.java.ChangePackage
-          options:
-            oldPackageName: "'com.morganstanley.projectname'"
-            newPackageName: "#newPackageName"
-
 #rename HELP.md to README.md
 #    - include: [ "HELP.md" ]
 #      chain:
@@ -235,6 +226,15 @@ engine:
             pattern: "//	testImplementation 'org.springframework.amqp:spring-rabbit-test'"
             with: "' testImplementation ''org.springframework.amqp:spring-rabbit-test'''"
 
+
+#rename src project package name
+    - include: ["**/*.java"]
+      chain:
+        - type: OpenRewriteRecipe
+          recipe: org.openrewrite.java.ChangePackage
+          options:
+            oldPackageName: "'com.morganstanley.projectname'"
+            newPackageName: "#newPackageName"
 
 
 
