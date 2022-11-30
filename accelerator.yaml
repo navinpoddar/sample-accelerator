@@ -227,14 +227,14 @@ engine:
             with: "' testImplementation ''org.springframework.amqp:spring-rabbit-test'''"
 
 
-##rename src project package name
-#    - include: ["**/*.java"]
-#      chain:
-#        - type: OpenRewriteRecipe
-#          recipe: org.openrewrite.java.ChangePackage
-#          options:
-#            oldPackageName: "'com.morganstanley.projectname'"
-#            newPackageName: "#newPackageName"
+#rename src project package name
+    - include: ["**/*.java"]
+      chain:
+        - type: OpenRewriteRecipe
+          recipe: org.openrewrite.java.ChangePackage
+          options:
+            oldPackageName: "'com.morganstanley.projectname'"
+            newPackageName: "#newPackageName"
 
 
 
