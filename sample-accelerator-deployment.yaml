@@ -1,0 +1,14 @@
+---
+apiVersion: accelerator.apps.tanzu.vmware.com/v1alpha1
+kind: Accelerator
+metadata:
+  name: sample-accelerator
+  namespace: accelerator-system
+spec:
+  git:
+    ref:
+      branch: main
+    url: https://github.com/jlafata/sample-accelerator.git
+    secretRef:
+      name: git-secret
+    interval: 10s

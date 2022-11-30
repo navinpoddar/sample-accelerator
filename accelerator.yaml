@@ -1,0 +1,238 @@
+accelerator:
+  displayName: Start Spring Accelerator
+  description: Experimental Accelerator the replicates The Spring Initializer functionality (for approved application architectures)
+  iconUrl: https://raw.githubusercontent.com/simple-starters/icons/master/icon-tanzu-light.png
+  tags:
+    - Tanzu
+    - Accelerator
+  options:
+    - name: javaVersion
+      inputType: select
+      label: Java version to use
+      choices:
+        - value: "1.8"
+          text: Java 8
+        - value: "11"
+          text: Java 11
+        - value: "17"
+          text: Java 17
+      defaultValue: "11"
+      required: true
+    - name: springBootVersion
+      inputType: select
+      label: Spring Boot version to use
+      choices:
+        - value: "3.0.1 (SNAPSHOT)"
+          text: 3.0.1-SNAPSHOT
+        - value: "3.0.0"
+          text: 3.0.0
+        - value: "2.7.7 (SNAPSHOT)"
+          text: 2.7.7-SNAPSHOT
+        - value: "2.7.6"
+          text: 2.7.6
+      defaultValue: "2.7.6"
+      required: true
+    - name: includeWebClient
+      inputType: checkbox
+      label: Include Web Client
+      display: false
+      dataType: boolean
+      defaultValue: false
+    - name: databaseSelection
+      inputType: select
+      label: What Database would you like to use
+      choices:
+        - value: "none"
+          text: None
+        - value: "H2"
+          text: H2
+        - value: "Mysql"
+          text: Mysql
+        - value: "Postgres"
+          text: Postgres
+      defaultValue: "H2"
+      required: true
+    - name: messagingSelection
+      inputType: select
+      label: What Streaming Messaging service would you like to use?
+      choices:
+        - value: "none"
+          text: None
+        - value: "RabbitMQ"
+          text: RabbitMQ
+        - value: "Kafka"
+          text: Kafka
+      defaultValue: "Kafka"
+      required: true
+
+engine:
+#variable compute
+    let:
+    - name: "springBootVersionReplacementLine"
+      expression: "'id ''org.springframework.boot'' version ' + #springBootVersion + ''''"
+    - name: "springDependencyManagementVersionReplacementLine"
+      expression: "'id ''io.spring.dependency-management'' version ''1.0.15-RELEASE'''"
+    - name: "newPackageName"
+      expression: "'com.morganstanley.'+#projectName.replaceAll('-','')"
+
+#transformation
+    merge:
+    - include: ["**/*"]
+      exclude: ["**/*.java"]
+      exclude: ["README.md"]
+      exclude: ["sample-accelerator-deployment.yaml"]
+
+#rename src project package name
+    - include: ["**/*.java"]
+      chain:
+        - type: OpenRewriteRecipe
+          recipe: org.openrewrite.java.ChangePackage
+          options:
+            oldPackageName: "'com.morganstanley.projectname'"
+            newPackageName: "#newPackageName"
+
+#update deployment files config/workload.yaml
+    - include: [ "config/workload.yaml" ]
+      chain:
+        - type: ReplaceText
+          substitutions:
+            - text: "spring-project-name"
+              with: "#projectName"
+
+#update project name in gradle settings
+    - include: [ "settings.gradle" ]
+      chain:
+        - type: ReplaceText
+          substitutions:
+            - text: "project-name"
+              with: "#projectName"
+
+    - include: [ "build.gradle" ]
+#update spring boot version
+      chain:
+        - type: ReplaceText
+          regex:
+            pattern: "sourceCompatibility = .*"
+            with: "'sourceCompatibility = ''' + #javaVersion + ''''"
+        - type: ReplaceText
+          substitutions:
+            - text: "id 'org.springframework.boot' version '3.0.0'"
+              with: "#springBootVersionReplacementLine"
+        - type: ReplaceText
+          condition: "#springBootVersion == '2.7.6' or #springBootVersion == '2.7.7 (SNAPSHOT)'"
+          regex:
+            pattern: "id 'io.spring.dependency-management' version '1.1.0'"
+            with: "#springDependencyManagementVersionReplacementLine"
+
+# include web client dependencies
+        - type: ReplaceText
+          condition: "#includeWebClient"
+          regex:
+            pattern: "//	implementation 'org.springframework.boot:spring-boot-starter-web'"
+            with: "' implementation ''org.springframework.boot:spring-boot-starter-web'''"
+        - type: ReplaceText
+          condition: "not #includeWebClient"
+          regex:
+            pattern: "//	implementation 'org.springframework.boot:spring-boot-starter-web'"
+            with: "' '"
+
+# address database selection
+        - type: ReplaceText
+          condition: "#databaseSelection == 'none'"
+          regex:
+            pattern: "//	implementation 'org.springframework.boot:spring-boot-starter-data-jpa'"
+            with: "' '"
+        - type: ReplaceText
+          condition: "#databaseSelection == 'none'"
+          regex:
+            pattern: "//	implementation 'org.springframework.boot:spring-boot-starter-data-rest'"
+            with: "' '"
+        - type: ReplaceText
+          condition: "#databaseSelection != 'none'"
+          regex:
+            pattern: "//	implementation 'org.springframework.boot:spring-boot-starter-data-jpa'"
+            with: "' implementation ''org.springframework.boot:spring-boot-starter-data-jpa'''"
+        - type: ReplaceText
+          condition: "#databaseSelection != 'none'"
+          regex:
+            pattern: "//	implementation 'org.springframework.boot:spring-boot-starter-data-rest'"
+            with: "' implementation ''org.springframework.boot:spring-boot-starter-data-rest'''"
+        - type: ReplaceText
+          condition: "#databaseSelection == 'Mysql'"
+          regex:
+            pattern: "//	runtimeOnly 'com.mysql:mysql-connector-j'"
+            with: "' runtimeOnly ''com.mysql:mysql-connector-j'''"
+        - type: ReplaceText
+          condition: "#databaseSelection != 'Mysql'"
+          regex:
+            pattern: "//	runtimeOnly 'com.mysql:mysql-connector-j'"
+            with: "' '"
+        - type: ReplaceText
+          condition: "#databaseSelection == 'H2'"
+          regex:
+            pattern: "//	runtimeOnly 'com.h2database:h2'"
+            with: "' runtimeOnly ''com.h2database:h2'''"
+        - type: ReplaceText
+          condition: "#databaseSelection != 'H2'"
+          regex:
+            pattern: "//	runtimeOnly 'com.h2database:h2'"
+            with: "' '"
+        - type: ReplaceText
+          condition: "#databaseSelection == 'Postgres'"
+          regex:
+            pattern: "//	runtimeOnly 'org.postgresql:postgresql'"
+            with: "' runtimeOnly ''org.postgresql:postgresql'''"
+        - type: ReplaceText
+          condition: "#databaseSelection != 'Postgres'"
+          regex:
+            pattern: "//	runtimeOnly 'org.postgresql:postgresql'"
+            with: "' '"
+
+# address messaging selection
+        - type: ReplaceText
+          condition: "#messagingSelection == 'none'  OR #messagingSelection == 'RabbitMQ'"
+          regex:
+            pattern: "//	implementation 'org.springframework.kafka:spring-kafka'"
+            with: "' '"
+        - type: ReplaceText
+          condition: "#messagingSelection == 'none'  OR #messagingSelection == 'RabbitMQ'"
+          regex:
+            pattern: "//	testImplementation 'org.springframework.kafka:spring-kafka-test'"
+            with: "' '"
+        - type: ReplaceText
+          condition: "#messagingSelection == 'Kafka'"
+          regex:
+            pattern: "//	implementation 'org.springframework.kafka:spring-kafka'"
+            with: "' implementation ''org.springframework.kafka:spring-kafka'''"
+        - type: ReplaceText
+          condition: "#messagingSelection == 'Kafka'"
+          regex:
+            pattern: "//	testImplementation 'org.springframework.kafka:spring-kafka-test'"
+            with: "'	testImplementation ''org.springframework.kafka:spring-kafka-test'''"
+        - type: ReplaceText
+          condition: "#messagingSelection == 'none' OR #messagingSelection == 'Kafka'"
+          regex:
+            pattern: "//	implementation 'org.springframework.boot:spring-boot-starter-amqp'"
+            with: "' '"
+        - type: ReplaceText
+          condition: "#messagingSelection == 'none' OR #messagingSelection == 'Kafka'"
+          regex:
+            pattern: "//	testImplementation 'org.springframework.amqp:spring-rabbit-test'"
+            with: "' '"
+        - type: ReplaceText
+          condition: "#messagingSelection == 'RabbitMQ' "
+          regex:
+            pattern: "//	implementation 'org.springframework.boot:spring-boot-starter-amqp'"
+            with: "' implementation ''org.springframework.boot:spring-boot-starter-amqp'''"
+        - type: ReplaceText
+          condition: "#messagingSelection == 'RabbitMQ'"
+          regex:
+            pattern: "//	testImplementation 'org.springframework.amqp:spring-rabbit-test'"
+            with: "' testImplementation ''org.springframework.amqp:spring-rabbit-test'''"
+
+
+
+
+
+
+
