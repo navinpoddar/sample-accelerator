@@ -4,6 +4,9 @@
 ## pre-requisites
 This app accelerator depends on the following fragments deployed before it will work
 
+## app accelerator reference [TAP 1.2.1]:
+https://docs.vmware.com/en/VMware-Tanzu-Application-Platform/1.2/tap/GUID-application-accelerator-creating-accelerators-creating-accelerators.html
+
 ### prepare environment
 ```
 export IMAGE_REGISTRY_SERVER=[YOUR_IMAGE_REGISTRY_SERVER]
